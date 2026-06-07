@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>نظام الفصول واللجان | الملصقات FT-GS-1116</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: linear-gradient(135deg, #0a0e1a 0%, #12182c 100%);
+      font-family: 'Cairo', sans-serif;
+      padding: 1.5rem;
+      min-height: 100vh;
+    }
+    .dashboard {
+      max-width: 1600px;
+      width: 100%;
+      margin: 0 auto;
+      background: rgba(15, 20, 40, 0.7);
+      backdrop-filter: blur(5px);
+      border-radius: 2.5rem;
+      padding: 2rem;
+      box-shadow: 0 30px 50px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 215, 140, 0.25);
+    }
+    .tabs-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid rgba(255, 190, 80, 0.35);
+      padding-bottom: 0.7rem;
+    }
+    .tab-btn {
+      background: linear-gradient(145deg, #232a42, #181e34);
+      border: none;
+      padding: 0.9rem 1.5rem;
+      font-size: 1.1rem;
+      font-weight: 800;
+      font-family: 'Cairo', sans-serif;
+      color: #e8eefe;
+      border-radius: 2rem 2rem 0 0;
+      cursor: pointer;
+      transition: 0.2s;
+      box-shadow: 0 -5px 0 rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tab-btn.active {
+      background: linear-gradient(145deg, #ffb657, #ff8c2e);
+      color: #1f1502;
+      box-shadow: 0 -6px 0 #b85d00;
+      transform: translateY(-2px);
+    }
+    .tab-pane { display: none; animation: fadeUp 0.35s ease; }
+    .tab-pane.active-pane { display: block; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px);} to { opacity: 1; transform: translateY(0);} }
+    .card-3d {
+      background: rgba(12, 17, 34, 0.85);
+      backdrop-filter: blur(8px);
+      border-radius: 1.8rem;
+      padding: 1.6rem;
+      margin-bottom: 1.8rem;
+      border: 1px solid rgba(255, 210, 120, 0.2);
+    }
+    .flex-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1.5rem; margin-bottom: 1rem; }
+    .form-group { flex: 1; min-width: 180px; }
+    label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: #ffdeaa; }
+    input, select, textarea {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: #0a0f1e;
+      border: 1px solid #5a6088;
+      border-radius: 1.2rem;
+      font-family: 'Cairo', sans-serif;
+      font-size: 1rem;
+      color: #ffffff;
+      outline: none;
+    }
+    .btn-3d {
+      background: linear-gradient(145deg, #2e3452, #1b213b);
+      border: none;
+      padding: 0.8rem 1.8rem;
+      border-radius: 2.5rem;
+      font-family: 'Cairo', sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      color: #f5efdf;
+      cursor: pointer;
+      box-shadow: 0 6px 0 #0a0e1a;
+      transition: 0.05s linear;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-3d:active { transform: translateY(3px); box-shadow: 0 3px 0 #0a0e1a; }
+    .btn-primary { background: linear-gradient(145deg, #ff9f47, #ff7518); color: #271d07; box-shadow: 0 6px 0 #a34700; }
+    .btn-success { background: linear-gradient(145deg, #2d8f4a, #1e6b38); color: white; box-shadow: 0 6px 0 #0f4623; }
+    .btn-excel { background: linear-gradient(145deg, #1f7b4d, #0f5a36); }
+    .btn-pdf { background: linear-gradient(145deg, #b83b2e, #922b1f); }
+    .btn-word { background: linear-gradient(145deg, #2a6090, #1a4570); }
+    .committee-item, .roster-item, .distributed-item {
+      background: #0e1428cc;
+      border-radius: 1.5rem;
+      margin-bottom: 1.8rem;
+      padding: 1.2rem;
+      border-right: 6px solid #ffaa55;
+    }
+    .committee-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; gap: 10px; }
+    .committee-name { font-size: 1.4rem; font-weight: 800; color: #ffdfaa; }
+    .roster-table { width: 100%; border-collapse: collapse; background: #0b1022b3; border-radius: 1rem; overflow: hidden; }
+    .roster-table th, .roster-table td { padding: 0.9rem 0.5rem; text-align: center; border-bottom: 1px solid #ffc28530; color: #ffffff; }
+    .roster-table th { background: #212845; color: #ffcd94; }
+    .num-input { width: 120px; text-align: center; background: #1a1f38; border: 1px solid #ffb35e; border-radius: 2rem; padding: 0.5rem; color: white; }
+    .stats-3col { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+    .stat-block { background: #00000050; flex: 1; border-radius: 1.2rem; padding: 0.9rem; text-align: center; color: #ffe6bf; }
+    .toast-msg { position: fixed; bottom: 25px; left: 25px; background: #1f2a36; color: #ffeaaf; padding: 10px 22px; border-radius: 40px; z-index: 1000; border-right: 4px solid gold; }
+    .action-buttons { display: flex; gap: 10px; margin-top: 1rem; flex-wrap: wrap; }
+    
+    /* أنماط الملصقات - موديل FT-GS-1116 (105x37mm لكل ملصق) */
+    /* الصفحة: 2 ملصقات عرض × 8 صفوف = 16 ملصق */
+    .sticker-page {
+      direction: rtl;
+      font-family: 'Cairo', sans-serif;
+      background: white;
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .sticker-grid {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
+    .sticker-row {
+      display: flex;
+      flex-direction: row;
+      width: 100%;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .sticker-card {
+      width: 50%;
+      height: auto;
+      min-height: 37mm;
+      background: linear-gradient(135deg, #fffef7 0%, #fff8e7 100%);
+      border: 2px solid #d4af37;
+      border-radius: 8px;
+      padding: 5px 8px;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .sticker-card h4 {
+      color: #b85d00;
+      font-size: 11px;
+      margin-bottom: 3px;
+      border-bottom: 1px solid #ffcc88;
+      display: inline-block;
+      font-weight: 700;
+    }
+    .sticker-card .student-name {
+      font-size: 14px;
+      font-weight: 800;
+      color: #1f3a5f;
+      margin: 4px 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sticker-card .details {
+      font-size: 9px;
+      color: #333;
+      line-height: 1.3;
+    }
+    .sticker-card .model {
+      font-size: 7px;
+      color: #888;
+      margin-top: 3px;
+      font-family: monospace;
+    }
+    @media print {
+      body * { visibility: hidden; }
+      .sticker-page, .sticker-page * { visibility: visible; }
+      .sticker-page { position: absolute; top: 0; right: 0; width: 100%; margin: 0; padding: 0; }
+      .sticker-card { break-inside: avoid; page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+<div class="dashboard">
+  <div class="tabs-container">
+    <button class="tab-btn" data-tab="tab-classes"><i class="fas fa-chalkboard-user"></i> الفصول</button>
+    <button class="tab-btn" data-tab="tab-students"><i class="fas fa-users-viewfinder"></i> الطلاب</button>
+    <button class="tab-btn active" data-tab="tab-committees"><i class="fas fa-people-arrows"></i> اللجان</button>
+    <button class="tab-btn" data-tab="tab-distribution"><i class="fas fa-chart-pie"></i> توزيع اللجان</button>
+    <button class="tab-btn" data-tab="tab-rosters"><i class="fas fa-scroll"></i> الكشوفات</button>
+    <button class="tab-btn" data-tab="tab-stickers"><i class="fas fa-tag"></i> الملصقات</button>
+  </div>
+
+  <div id="tab-classes" class="tab-pane"><div class="card-3d"><h2>إدارة الطلاب</h2><div class="flex-row"><div class="form-group"><label>الصف</label><select id="classSelect"><option value="اول متوسط">أول متوسط</option><option value="ثاني متوسط">ثاني متوسط</option><option value="ثالث متوسط">ثالث متوسط</option></select></div><div class="form-group" style="flex:2"><label>أسماء الطلاب</label><textarea id="studentsNamesInput" rows="3"></textarea></div><div><button id="addBatchBtn" class="btn-3d btn-primary"><i class="fas fa-plus-circle"></i> إضافة دفعة</button></div></div><div class="stats-3col"><div class="stat-block">📊 إجمالي الطلاب: <strong id="totalStudentsStat">0</strong></div><div class="stat-block">📘 أول متوسط: <strong id="classFirstStat">0</strong></div><div class="stat-block">📗 ثاني متوسط: <strong id="classSecondStat">0</strong></div><div class="stat-block">📙 ثالث متوسط: <strong id="classThirdStat">0</strong></div></div></div></div>
+
+  <div id="tab-students" class="tab-pane"><div class="card-3d"><div style="display: flex; justify-content: space-between;"><h2>الطلاب حسب الفصل</h2><button id="refreshStudentsBtn" class="btn-3d"><i class="fas fa-sync"></i> تحديث</button></div><div id="independentTablesContainer"></div></div></div>
+
+  <div id="tab-committees" class="tab-pane active-pane">
+    <div class="card-3d"><div class="flex-row"><div class="form-group" style="flex:2"><label>اسم اللجنة الجديدة</label><input type="text" id="committeeNameInput" placeholder="مثال: لجنة النشاط العلمي"></div><div><button id="addCommitteeBtn" class="btn-3d btn-primary"><i class="fas fa-plus"></i> إنشاء لجنة</button></div></div><div id="remainingStatsContainer"><h4 style="color:#ffcc88;">الطلاب المتبقين قبل التوزيع</h4><div id="remainingNumbers" class="stats-3col">—</div></div></div>
+    <div id="committeesListContainer"></div>
+  </div>
+
+  <div id="tab-distribution" class="tab-pane"><div class="card-3d"><h2>اللجان الموزعة مع مقر اللجنة</h2><div id="distributedCommitteesContainer"></div></div></div>
+
+  <div id="tab-rosters" class="tab-pane"><div class="card-3d"><h2>كشوفات اللجان</h2><div id="rostersContainer"></div></div></div>
+
+  <div id="tab-stickers" class="tab-pane"><div class="card-3d"><h2><i class="fas fa-tag"></i> ملصقات اللجان - موديل FT-GS-1116 (105×37mm)</h2><div id="stickersButtonsContainer" style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem;"></div></div></div>
+</div>
+
+<script>
+  let studentsArray = [];
+  let committeesArray = [];
+  let distributedCommittees = [];
+
+  function loadAll() {
+    try {
+      const s = localStorage.getItem("masterStudentsFinalV3");
+      studentsArray = s ? JSON.parse(s) : [];
+      const c = localStorage.getItem("pendingCommitteesV3");
+      committeesArray = c ? JSON.parse(c) : [];
+      const d = localStorage.getItem("distributedCommitteesV4");
+      distributedCommittees = d ? JSON.parse(d) : [];
+      studentsArray = studentsArray.map(st=>({...st, addedAt: st.addedAt || Date.now()}));
+    } catch(e) { console.error(e); }
+    updateAllUI();
+  }
+  function saveAll() {
+    localStorage.setItem("masterStudentsFinalV3", JSON.stringify(studentsArray));
+    localStorage.setItem("pendingCommitteesV3", JSON.stringify(committeesArray));
+    localStorage.setItem("distributedCommitteesV4", JSON.stringify(distributedCommittees));
+  }
+
+  function getRemainingActual() {
+    let totalFirst = studentsArray.filter(s=>s.className === "اول متوسط").length;
+    let totalSecond = studentsArray.filter(s=>s.className === "ثاني متوسط").length;
+    let totalThird = studentsArray.filter(s=>s.className === "ثالث متوسط").length;
+    let used = { "اول متوسط":0, "ثاني متوسط":0, "ثالث متوسط":0 };
+    for(let d of distributedCommittees) if(d.quotas) { used["اول متوسط"] += (d.quotas["اول متوسط"]||0); used["ثاني متوسط"] += (d.quotas["ثاني متوسط"]||0); used["ثالث متوسط"] += (d.quotas["ثالث متوسط"]||0); }
+    return { "اول متوسط": totalFirst - used["اول متوسط"], "ثاني متوسط": totalSecond - used["ثاني متوسط"], "ثالث متوسط": totalThird - used["ثالث متوسط"] };
+  }
+  function getPendingUsed() {
+    let used = { "اول متوسط":0, "ثاني متوسط":0, "ثالث متوسط":0 };
+    for(let com of committeesArray) if(com.quotas) { used["اول متوسط"] += (com.quotas["اول متوسط"]||0); used["ثاني متوسط"] += (com.quotas["ثاني متوسط"]||0); used["ثالث متوسط"] += (com.quotas["ثالث متوسط"]||0); }
+    return used;
+  }
+  function updateRemainingStatsUI() {
+    const remainingActual = getRemainingActual();
+    const pendingUsed = getPendingUsed();
+    const finalRem = { "اول متوسط": remainingActual["اول متوسط"] - pendingUsed["اول متوسط"], "ثاني متوسط": remainingActual["ثاني متوسط"] - pendingUsed["ثاني متوسط"], "ثالث متوسط": remainingActual["ثالث متوسط"] - pendingUsed["ثالث متوسط"] };
+    const remDiv = document.getElementById("remainingNumbers");
+    if(remDiv) remDiv.innerHTML = `<div class="stat-block">📖 أول متوسط: <strong>${Math.max(0,finalRem["اول متوسط"])}</strong> / ${remainingActual["اول متوسط"]}</div><div class="stat-block">📖 ثاني متوسط: <strong>${Math.max(0,finalRem["ثاني متوسط"])}</strong> / ${remainingActual["ثاني متوسط"]}</div><div class="stat-block">📖 ثالث متوسط: <strong>${Math.max(0,finalRem["ثالث متوسط"])}</strong> / ${remainingActual["ثالث متوسط"]}</div>`;
+  }
+
+  function getStudentsByClassSorted() {
+    const byClass = { "اول متوسط": [], "ثاني متوسط": [], "ثالث متوسط": [] };
+    studentsArray.forEach(s => { if(byClass[s.className]) byClass[s.className].push(s); });
+    for(let c in byClass) byClass[c].sort((a,b) => a.addedAt - b.addedAt);
+    return byClass;
+  }
+
+  function generateRosterForCommittee(committee) {
+    const quotas = committee.quotas || { "اول متوسط":0, "ثاني متوسط":0, "ثالث متوسط":0 };
+    const studentsByClass = getStudentsByClassSorted();
+    let roster = [];
+    const assignedStudentIds = new Set();
+    for(let d of distributedCommittees) {
+      if(d.assignedStudentIds) {
+        for(let cls of ["اول متوسط","ثاني متوسط","ثالث متوسط"]) if(d.assignedStudentIds[cls]) d.assignedStudentIds[cls].forEach(id => assignedStudentIds.add(id));
+      }
+    }
+    for(let cls of ["اول متوسط", "ثاني متوسط", "ثالث متوسط"]) {
+      let needed = quotas[cls] || 0;
+      let available = studentsByClass[cls].filter(st => !assignedStudentIds.has(st.id));
+      let taken = available.slice(0, needed);
+      taken.forEach(st => roster.push({ ...st, className: cls, committeeName: committee.name, committeeLocation: committee.location || "غير محدد" }));
+      if(!committee.assignedStudentIds) committee.assignedStudentIds = { "اول متوسط":[], "ثاني متوسط":[], "ثالث متوسط":[] };
+      committee.assignedStudentIds[cls] = taken.map(st => st.id);
+    }
+    return roster;
+  }
+
+  function updateDistributedRosters() {
+    for(let com of distributedCommittees) {
+      const roster = generateRosterForCommittee(com);
+      com.rosterStudents = roster;
+      com.assignedStudentIds = com.assignedStudentIds || {};
+    }
+    saveAll();
+  }
+
+  function distributeCommittee(committee, location) {
+    const quotas = committee.quotas || { "اول متوسط":0, "ثاني متوسط":0, "ثالث متوسط":0 };
+    const remainingActual = getRemainingActual();
+    let canDistribute = true;
+    let messages = [];
+    for(let cls of ["اول متوسط", "ثاني متوسط", "ثالث متوسط"]) {
+      if(quotas[cls] > remainingActual[cls]) { canDistribute = false; messages.push(`⚠️ العدد المطلوب من ${cls} (${quotas[cls]}) يتجاوز المتاح (${remainingActual[cls]})`); }
+    }
+    if(!canDistribute) { showMessage(messages.join(' | '), true); return false; }
+    const distributedCopy = { ...committee, distributedAt: Date.now(), location: location, rosterStudents: [] };
+    distributedCommittees.push(distributedCopy);
+    committeesArray = committeesArray.filter(c => c.id !== committee.id);
+    updateDistributedRosters();
+    saveAll();
+    renderCommittees();
+    renderDistributed();
+    renderRosters();
+    renderStickersButtons();
+    updateRemainingStatsUI();
+    updateClassStats();
+    renderIndependentTables();
+    showMessage(`✅ تم توزيع لجنة "${committee.name}" في مقر: ${location}`);
+    return true;
+  }
+
+  function deleteDistributedCommittee(id) {
+    distributedCommittees = distributedCommittees.filter(c => c.id !== id);
+    saveAll();
+    renderDistributed();
+    renderRosters();
+    renderStickersButtons();
+    updateRemainingStatsUI();
+    updateClassStats();
+    showMessage("تم إلغاء توزيع اللجنة");
+  }
+
+  function renderRosters() {
+    const container = document.getElementById("rostersContainer");
+    if(!container) return;
+    if(distributedCommittees.length === 0) { container.innerHTML = `<div class="card-3d">لا توجد كشوفات</div>`; return; }
+    let html = "";
+    distributedCommittees.forEach(com => {
+      const roster = com.rosterStudents || [];
+      let rows = roster.map((st,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(st.name)}</td><td>${st.className}</td><td>${com.name}</td><td class="sign-cell">__________</td></tr>`).join('');
+      if(roster.length===0) rows='<tr><td colspan="5">لا يوجد طلاب</td></tr>';
+      html += `<div class="roster-item" id="roster-${com.id}"><div class="committee-header"><span class="committee-name">📋 كشف: ${escapeHtml(com.name)} (مقر: ${escapeHtml(com.location||'غير محدد')})</span><span>عدد الطلاب: ${roster.length}</span></div><table class="roster-table"><thead><tr><th>#</th><th>اسم الطالب</th><th>الصف</th><th>اللجنة</th><th>التوقيع</th></tr></thead><tbody>${rows}</tbody></table><div class="action-buttons"><button class="btn-3d btn-excel export-excel" data-id="${com.id}"><i class="fas fa-file-excel"></i> Excel</button><button class="btn-3d btn-pdf export-pdf" data-id="${com.id}"><i class="fas fa-file-pdf"></i> PDF</button><button class="btn-3d print-roster" data-id="${com.id}"><i class="fas fa-print"></i> طباعة</button></div></div>`;
+    });
+    container.innerHTML = html;
+    document.querySelectorAll('.export-excel').forEach(btn => btn.addEventListener('click',()=>exportToExcel(parseInt(btn.dataset.id))));
+    document.querySelectorAll('.export-pdf').forEach(btn => btn.addEventListener('click',()=>exportRosterToPDF(parseInt(btn.dataset.id))));
+    document.querySelectorAll('.print-roster').forEach(btn => btn.addEventListener('click',()=>printRoster(parseInt(btn.dataset.id))));
+  }
+
+  function exportToExcel(committeeId) {
+    const committee = distributedCommittees.find(c=>c.id===committeeId);
+    if(!committee) return;
+    const data = (committee.rosterStudents||[]).map((st,idx)=>({ "#":idx+1, "اسم الطالب":st.name, "الصف":st.className, "اللجنة":committee.name, "مقر اللجنة":committee.location||'', "التوقيع":"" }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, committee.name);
+    XLSX.writeFile(wb, `كشف_${committee.name}.xlsx`);
+    showMessage(`تم تصدير ${committee.name}`);
+  }
+
+  function exportRosterToPDF(committeeId) {
+    const element = document.getElementById(`roster-${committeeId}`);
+    if(!element) return;
+    html2pdf().set({ margin: 0.5, filename: `كشف_${distributedCommittees.find(c=>c.id===committeeId)?.name}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } }).from(element).save();
+    showMessage(`جاري تصدير PDF`);
+  }
+
+  function printRoster(committeeId) {
+    const element = document.getElementById(`roster-${committeeId}`);
+    if(!element) return;
+    const win = window.open('', '_blank');
+    win.document.write(`<html dir="rtl"><head><title>كشف اللجنة</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet"><style>body { font-family: Cairo; padding: 2rem; } table { width:100%; border-collapse:collapse; } th,td { border:1px solid #aaa; padding:8px; text-align:center; } th { background:#f0f0f0; }</style></head><body>${element.outerHTML}</body></html>`);
+    win.document.close();
+    win.print();
+  }
+
+  // دالة إنشاء الملصقات حسب موديل FT-GS-1116 (2×8 = 16 ملصق)
+  function generateStickersHTML(committee) {
+    const roster = committee.rosterStudents || [];
+    if(roster.length === 0) return `<div class="card-3d">لا يوجد طلاب في هذه اللجنة لإنشاء ملصقات</div>`;
+    
+    let stickersHTML = `<div class="sticker-page"><div class="sticker-grid">`;
+    // إنشاء 16 ملصقًا في صفحة واحدة (2 عرض × 8 صفوف)
+    const totalStickers = 16;
+    for(let i = 0; i < totalStickers; i++) {
+      if(i % 2 === 0) stickersHTML += `<div class="sticker-row">`;
+      const student = roster[i];
+      if(student) {
+        stickersHTML += `
+          <div class="sticker-card">
+            <h4>${escapeHtml(committee.name)}</h4>
+            <div class="student-name">${escapeHtml(student.name)}</div>
+            <div class="details">الصف: ${student.className}<br>المقر: ${escapeHtml(committee.location || 'غير محدد')}</div>
+            <div class="model">موديل: FT-GS-1116 (105×37mm)</div>
+          </div>
+        `;
+      } else {
+        stickersHTML += `
+          <div class="sticker-card" style="background:#f5f5f5; opacity:0.6;">
+            <div class="student-name">---</div>
+            <div class="details">ملصق فارغ</div>
+            <div class="model">FT-GS-1116</div>
+          </div>
+        `;
+      }
+      if(i % 2 === 1 || i === totalStickers - 1) stickersHTML += `</div>`;
+    }
+    stickersHTML += `</div></div>`;
+    return stickersHTML;
+  }
+
+  function exportStickersToPDF(committee) {
+    const htmlContent = generateStickersHTML(committee);
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const printWindow = window.open(url, '_blank');
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+      URL.revokeObjectURL(url);
+    }, 500);
+    showMessage(`تم فتح ملصقات ${committee.name} للطباعة/PDF`);
+  }
+
+  function exportStickersToWord(committee) {
+    const stickersHTML = generateStickersHTML(committee);
+    const fullHTML = `<!DOCTYPE html>
+    <html dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <title>ملصقات_${committee.name}</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+          font-family: 'Cairo', 'Arial', sans-serif; 
+          padding: 0; 
+          margin: 0;
+          direction: rtl;
+          background: white;
+        }
+        .sticker-page { width: 100%; margin: 0; padding: 0; }
+        .sticker-grid { display: flex; flex-direction: column; width: 100%; }
+        .sticker-row { display: flex; flex-direction: row; width: 100%; }
+        .sticker-card {
+          width: 50%;
+          height: 37mm;
+          background: linear-gradient(135deg, #fffef7 0%, #fff8e7 100%);
+          border: 2px solid #d4af37;
+          border-radius: 8px;
+          padding: 5px 8px;
+          text-align: center;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          page-break-inside: avoid;
+        }
+        .sticker-card h4 { color: #b85d00; font-size: 11px; margin-bottom: 3px; border-bottom: 1px solid #ffcc88; display: inline-block; }
+        .sticker-card .student-name { font-size: 14px; font-weight: 800; color: #1f3a5f; margin: 4px 0; }
+        .sticker-card .details { font-size: 9px; color: #333; }
+        .sticker-card .model { font-size: 7px; color: #888; margin-top: 3px; }
+      </style>
+    </head>
+    <body>${stickersHTML}</body>
+    </html>`;
+    const blob = new Blob([fullHTML], { type: "application/msword" });
+    saveAs(blob, `ملصقات_${committee.name}.doc`);
+    showMessage(`تم تصدير ملصقات ${committee.name} إلى Word`);
+  }
+
+  function renderStickersButtons() {
+    const container = document.getElementById("stickersButtonsContainer");
+    if(!container) return;
+    if(distributedCommittees.length === 0) { container.innerHTML = `<div class="card-3d">لا توجد لجان موزعة لعمل ملصقات</div>`; return; }
+    let btns = "";
+    distributedCommittees.forEach(com => {
+      btns += `<div class="committee-item" style="margin-bottom:1rem;"><div class="committee-header"><span class="committee-name">🏷️ ${escapeHtml(com.name)} (المقر: ${escapeHtml(com.location||'-')}) - عدد الطلاب: ${(com.rosterStudents||[]).length}</span><div class="action-buttons"><button class="btn-3d btn-pdf stickers-pdf" data-id="${com.id}"><i class="fas fa-file-pdf"></i> ملصقات PDF</button><button class="btn-3d btn-word stickers-word" data-id="${com.id}"><i class="fas fa-file-word"></i> ملصقات Word</button></div></div></div>`;
+    });
+    container.innerHTML = btns;
+    document.querySelectorAll('.stickers-pdf').forEach(btn => btn.addEventListener('click',()=>{ const com = distributedCommittees.find(c=>c.id==parseInt(btn.dataset.id)); if(com) exportStickersToPDF(com); }));
+    document.querySelectorAll('.stickers-word').forEach(btn => btn.addEventListener('click',()=>{ const com = distributedCommittees.find(c=>c.id==parseInt(btn.dataset.id)); if(com) exportStickersToWord(com); }));
+  }
+
+  function addBatchStudents(className, rawNames) {
+    if(!rawNames.trim()) { showMessage("أدخل أسماء", true); return false; }
+    let nameList = [];
+    let lines = rawNames.split(/\r?\n/);
+    for(let line of lines) {
+      line = line.trim();
+      if(line.includes(',') || line.includes('，')) { let parts = line.split(/[،,]/); for(let part of parts) if(part.trim()) nameList.push(part.trim()); }
+      else if(line) nameList.push(line);
+    }
+    if(!nameList.length) return false;
+    const now = Date.now();
+    let added = 0;
+    for(let i=0;i<nameList.length;i++) {
+      let sname = nameList[i];
+      if(!studentsArray.some(st => st.name === sname && st.className === className)) {
+        studentsArray.push({ id: now+i+Math.random(), name: sname, className, addedAt: now+i });
+        added++;
+      }
+    }
+    if(added) { saveAll(); updateClassStats(); renderIndependentTables(); updateRemainingStatsUI(); renderRosters(); showMessage(`تم إضافة ${added} طالب`); return true; }
+    else { showMessage("لا توجد أسماء جديدة", true); return false; }
+  }
+
+  function deleteStudentById(id) {
+    studentsArray = studentsArray.filter(s => s.id !== id);
+    saveAll(); updateClassStats(); renderIndependentTables(); updateRemainingStatsUI(); renderRosters(); showMessage("تم حذف الطالب");
+  }
+
+  function updateClassStats() {
+    document.getElementById('totalStudentsStat') && (document.getElementById('totalStudentsStat').innerText = studentsArray.length);
+    document.getElementById('classFirstStat') && (document.getElementById('classFirstStat').innerText = studentsArray.filter(s=>s.className==="اول متوسط").length);
+    document.getElementById('classSecondStat') && (document.getElementById('classSecondStat').innerText = studentsArray.filter(s=>s.className==="ثاني متوسط").length);
+    document.getElementById('classThirdStat') && (document.getElementById('classThirdStat').innerText = studentsArray.filter(s=>s.className==="ثالث متوسط").length);
+  }
+
+  function renderIndependentTables() {
+    const container = document.getElementById("independentTablesContainer");
+    if(!container) return;
+    let html="";
+    for(let cls of ["اول متوسط","ثاني متوسط","ثالث متوسط"]) {
+      let filtered = studentsArray.filter(s=> s.className === cls).sort((a,b)=> a.addedAt - b.addedAt);
+      let rows = filtered.map((st,idx)=>`<tr><td style="color:#fff;">${idx+1}</td><td style="color:#fff;">${escapeHtml(st.name)}</td><td style="color:#fff;">${new Date(st.addedAt).toLocaleString('ar-EG')}</td><td><button class="delete-student" data-id="${st.id}" style="background:#aa3e2e40; border:none; border-radius:2rem; padding:0.3rem 1rem; color:white;"><i class="fas fa-trash"></i></button></td></tr>`).join('');
+      html += `<div style="margin-bottom:1rem;"><div style="padding:0.5rem;color:#ffcd94;">${cls}</div><table class="roster-table"><thead><tr><th>#</th><th>الاسم</th><th>تاريخ الإضافة</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="4">لا يوجد طلاب</td></tr>'}</tbody></table></div>`;
+    }
+    container.innerHTML = html;
+    document.querySelectorAll('.delete-student').forEach(btn=>{ btn.addEventListener('click',()=>deleteStudentById(parseInt(btn.getAttribute('data-id')))); });
+  }
+
+  function renderCommittees() {
+    const container = document.getElementById("committeesListContainer");
+    if(!container) return;
+    if(committeesArray.length===0){ container.innerHTML=`<div class="card-3d">لا توجد لجان مضافة</div>`; return; }
+    let html="";
+    committeesArray.forEach(com=>{ const q=com.quotas||{}; html+=`<div class="committee-item"><div class="committee-header"><span class="committee-name">${escapeHtml(com.name)}</span><button class="delete-committee btn-3d" data-id="${com.id}">حذف</button></div><table class="roster-table"><thead><tr><th>الصف</th><th>العدد</th></tr></thead><tbody><tr><td>أول متوسط</td><td><input type="number" class="num-input quota-input" data-class="اول متوسط" data-comid="${com.id}" value="${q["اول متوسط"]||0}"></td></tr><tr><td>ثاني متوسط</td><td><input type="number" class="num-input quota-input" data-class="ثاني متوسط" data-comid="${com.id}" value="${q["ثاني متوسط"]||0}"></td></tr><tr><td>ثالث متوسط</td><td><input type="number" class="num-input quota-input" data-class="ثالث متوسط" data-comid="${com.id}" value="${q["ثالث متوسط"]||0}"></td></tr></tbody></table><div class="flex-row" style="margin-top:1rem;"><div class="form-group"><label>📍 مقر اللجنة</label><input type="text" id="location-${com.id}" placeholder="مثال: قاعة A, مبنى 2" value="${com.location||''}"></div><div><button class="btn-3d btn-success distribute-btn" data-id="${com.id}"><i class="fas fa-check"></i> توزيع اللجنة</button></div></div></div>`; });
+    container.innerHTML = html;
+    document.querySelectorAll('.quota-input').forEach(inp=>{ inp.addEventListener('change',function(){ let cls=this.dataset.class, id=parseInt(this.dataset.comid), val=parseInt(this.value)||0; let com=committeesArray.find(c=>c.id===id); if(com){ com.quotas=com.quotas||{}; com.quotas[cls]=val; saveAll(); updateRemainingStatsUI(); showMessage(`تم تحديث ${cls}`); } }); });
+    document.querySelectorAll('.delete-committee').forEach(btn=>{ btn.addEventListener('click',()=>{ let id=parseInt(btn.dataset.id); committeesArray=committeesArray.filter(c=>c.id!==id); saveAll(); renderCommittees(); updateRemainingStatsUI(); showMessage("حذفت اللجنة"); }); });
+    document.querySelectorAll('.distribute-btn').forEach(btn=>{ btn.addEventListener('click',()=>{ let id=parseInt(btn.dataset.id); let com=committeesArray.find(c=>c.id===id); if(com){ let locInput = document.getElementById(`location-${id}`); let location = locInput ? locInput.value : ""; if(!location.trim()){ showMessage("الرجاء إدخال مقر اللجنة", true); return; } distributeCommittee(com, location.trim()); } }); });
+  }
+
+  function renderDistributed() {
+    const container = document.getElementById("distributedCommitteesContainer");
+    if(!container) return;
+    if(distributedCommittees.length===0){ container.innerHTML=`<div class="card-3d">لا توجد لجان موزعة</div>`; return; }
+    let html="";
+    distributedCommittees.forEach(com=>{ const q=com.quotas||{}; html+=`<div class="distributed-item"><div class="committee-header"><span class="committee-name">✅ ${escapeHtml(com.name)} (مقر: ${escapeHtml(com.location||'-')})</span><button class="delete-distributed btn-3d" data-id="${com.id}">حذف التوزيع</button></div><table class="roster-table"><thead><tr><th>الصف</th><th>العدد الموزع</th></tr></thead><tbody><tr><td>أول متوسط</td><td>${q["اول متوسط"]||0}</td></tr><tr><td>ثاني متوسط</td><td>${q["ثاني متوسط"]||0}</td></tr><tr><td>ثالث متوسط</td><td>${q["ثالث متوسط"]||0}</td></tr></tbody></table></div>`; });
+    container.innerHTML = html;
+    document.querySelectorAll('.delete-distributed').forEach(btn=>{ btn.addEventListener('click',()=>{ deleteDistributedCommittee(parseInt(btn.dataset.id)); }); });
+  }
+
+  function addCommittee(name) { if(!name.trim()){ showMessage("أدخل اسم",true); return false; } if(committeesArray.some(c=>c.name===name.trim())){ showMessage("موجود",true); return false; } committeesArray.push({ id:Date.now(), name:name.trim(), quotas:{"اول متوسط":0,"ثاني متوسط":0,"ثالث متوسط":0}, location:"" }); saveAll(); renderCommittees(); updateRemainingStatsUI(); showMessage(`تم إنشاء ${name}`); return true; }
+  function updateAllUI() { updateClassStats(); renderIndependentTables(); renderCommittees(); renderDistributed(); renderRosters(); renderStickersButtons(); updateRemainingStatsUI(); }
+  
+  function initTabs() { const btns=document.querySelectorAll('.tab-btn'); const panes=document.querySelectorAll('.tab-pane'); btns.forEach(btn=>{ btn.addEventListener('click',()=>{ const id=btn.dataset.tab; btns.forEach(b=>b.classList.remove('active')); panes.forEach(p=>p.classList.remove('active-pane')); btn.classList.add('active'); document.getElementById(id).classList.add('active-pane'); if(id==='tab-students') renderIndependentTables(); if(id==='tab-committees'){ renderCommittees(); updateRemainingStatsUI(); } if(id==='tab-distribution') renderDistributed(); if(id==='tab-rosters') renderRosters(); if(id==='tab-stickers') renderStickersButtons(); }); }); }
+  function bindEvents() { document.getElementById('addBatchBtn')?.addEventListener('click',()=>{ addBatchStudents(document.getElementById('classSelect').value, document.getElementById('studentsNamesInput').value); document.getElementById('studentsNamesInput').value=''; }); document.getElementById('addCommitteeBtn')?.addEventListener('click',()=>{ addCommittee(document.getElementById('committeeNameInput').value); document.getElementById('committeeNameInput').value=''; }); document.getElementById('refreshStudentsBtn')?.addEventListener('click',()=>renderIndependentTables()); }
+  function escapeHtml(str) { return String(str).replace(/[&<>]/g, m=> m==='&'?'&amp;': m==='<'?'&lt;':'&gt;'); }
+  function showMessage(msg, isErr=false) { let t=document.createElement('div'); t.className='toast-msg'; t.innerHTML=`<i class="fas ${isErr? 'fa-exclamation-triangle':'fa-check-circle'}"></i> ${msg}`; document.body.appendChild(t); setTimeout(()=>t.remove(),2500); }
+  
+  loadAll(); initTabs(); bindEvents();
+</script>
+</body>
+</html>
